@@ -12,6 +12,15 @@ export default {
     // either by Webpack (dev) or Flask (prod)
 
     if (FLASK.appUrl) {
+      // Handling http:// and https:// cases when the UI is behind
+      // a reverse proxy that does TLS termination, otherwise
+      // browser will block this request
+      if (
+        window.location.protocol === 'https:' &&
+        !FLASK.appUrl.startsWith('https://')
+      ) {
+        FLASK.appUrl = FLASK.appUrl.replace('http://', 'https://')
+      }
       return `${FLASK.appUrl}${path}`
     } else {
       return path
