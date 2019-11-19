@@ -113,7 +113,9 @@ def create_app(config={}):
     def setup_js_context():
         # setup the appUrl
         appUrl = urlsplit(request.host_url)
-        g.jsContext = {"appUrl": appUrl.geturl()[:-1]}
+        # allowing appUrl override from MELTANO_UI_URL if meltano API and UI are served
+        # behind a reverse proxy
+        g.jsContext = {"appUrl": os.getenv("MELTANO_UI_URL", appUrl.geturl()[:-1])}
 
         if tracker.send_anonymous_usage_stats:
             g.jsContext["isSendAnonymousUsageStats"] = True
@@ -128,9 +130,12 @@ def create_app(config={}):
             airflow_port, _ = settings.get_value(
                 db.session, airflow, "webserver.web_server_port"
             )
-            g.jsContext["airflowUrl"] = appUrl._replace(
-                netloc=f"{appUrl.hostname}:{airflow_port}"
-            ).geturl()[:-1]
+            g.jsContext["airflowUrl"] = os.getenv(
+                "MELTANO_AIRFLOW_URL",
+                appUrl._replace(netloc=f"{appUrl.hostname}:{airflow_port}").geturl()[
+                    :-1
+                ],
+            )
         except (PluginMissingError, PluginSettingMissingError):
             pass
 
