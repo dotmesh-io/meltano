@@ -47,6 +47,7 @@
     ]
   },
   "resolutions": {
-    "eslint-utils": ">=1.4.1"
+    "eslint-utils": ">=1.4.1",
+    "serialize-javascript": ">=2.1.1"
   }
 }
