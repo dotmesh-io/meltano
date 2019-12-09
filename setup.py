@@ -46,7 +46,7 @@ requires = [
     'python-dotenv==0.10.1',
     'python-gitlab==1.8.0',
     'simplejson==3.16.0',
-    'urllib3==1.23',
+    'urllib3==1.24.2',
     'sqlparse==0.3.0',
     'watchdog==0.9.0',
 ]
