@@ -16,11 +16,11 @@ git clone git@gitlab.com:meltano/meltano.git
 
 ```sh
 cd meltano/docs/
-npm install
+yarn install
 ```
 3. Build and run
 ```bash
-npm run dev:docs
+yarn dev:docs
 ```
 4. View changes at http://localhost:8080/ 
 
@@ -28,7 +28,7 @@ npm run dev:docs
 
 To generate static assets for the `docs/` directory, run:
 ```bash
-npm run build:docs
+yarn build:docs
 ```
 This will add the generated files in the `docs/public` directory.
 
