@@ -45,5 +45,8 @@
       "vue-cli-service lint",
       "git add"
     ]
+  },
+  "resolutions": {
+    "eslint-utils": ">=1.4.1"
   }
 }
