@@ -6,12 +6,17 @@ import systemApi from '@/api/system'
 import utils from '@/utils/utils'
 
 const defaultState = utils.deepFreeze({
+  hasGeneratedDbtDocs: false,
   latestVersion: null,
   updating: false,
-  version: null
+  version: null,
+  identity: null
 })
 
 const getters = {
+  hasDbtDocs(state) {
+    return state.hasGeneratedDbtDocs
+  },
   updateAvailable(state) {
     if (state.latestVersion === null || state.version === null) {
       return false
@@ -28,6 +33,18 @@ const actions = {
       commit('setLatestVersion', response.data.latestVersion)
     })
   },
+
+  checkHasDbtDocs({ commit }) {
+    systemApi
+      .dbtDocs()
+      .then(() => {
+        commit('setHasDbtDocs', true)
+      })
+      .catch(() => {
+        commit('setHasDbtDocs', false)
+      })
+  },
+
   upgrade({ state, commit }) {
     let upgradePoller = null
 
@@ -61,10 +78,25 @@ const actions = {
       upgradePoller.dispose()
       commit('setUpdating', false)
     })
+  },
+
+  logout() {
+    window.location.href = utils.root('/auth/logout')
+  },
+
+  fetchIdentity({ commit }) {
+    systemApi
+      .identity()
+      .then(response => commit('setIdentity', response.data))
+      .catch(() => commit('setIdentity', null))
   }
 }
 
 const mutations = {
+  setHasDbtDocs(state, value) {
+    state.hasGeneratedDbtDocs = value
+  },
+
   setLatestVersion(state, version) {
     state.latestVersion = version
   },
@@ -75,6 +107,10 @@ const mutations = {
 
   setVersion(state, version) {
     state.version = version
+  },
+
+  setIdentity(state, identity) {
+    state.identity = identity
   }
 }
 

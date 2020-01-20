@@ -1,4 +1,8 @@
+import lodash from 'lodash'
+
 import flaskContext from '@/flask'
+import moment from 'moment'
+import { namer } from '@/utils/mappers'
 
 const regExpConnectorLogo = /(?:tap-|target-)?(.*)/
 const regExpPrivateInput = /(password|private|secret|token)/
@@ -31,6 +35,16 @@ export default {
     fragment = fragment ? `#${fragment}` : ''
 
     return `https://meltano.com/docs${path}.html${fragment}`
+  },
+
+  downloadBlobAsFile(blob, fileName) {
+    const url = window.URL.createObjectURL(new Blob([blob]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', fileName)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   },
 
   getConnectorLogoUrl(connectorName) {
@@ -113,6 +127,9 @@ export default {
     const capMe = value.toString()
     return capMe.charAt(0).toUpperCase() + capMe.slice(1)
   },
+  extractFileNameFromPath(path) {
+    return path.replace(/^.*[\\/]/, '')
+  },
   hyphenate(value, prepend) {
     if (!value) {
       return ''
@@ -136,6 +153,11 @@ export default {
     } catch (e) {
       return value
     }
+  },
+  requiredConnectorSettingsKeys(settings, groupValidation) {
+    return groupValidation
+      ? lodash.intersection(...groupValidation)
+      : settings.map(namer)
   },
   singularize(value) {
     if (!value) {
@@ -219,5 +241,26 @@ export default {
 
   formatDateStringYYYYMMDD(date) {
     return new Date(date).toISOString().split('T')[0]
+  },
+
+  // Time Utils
+  momentFromNow(val) {
+    return moment(val).fromNow()
+  },
+
+  momentFormatlll(val) {
+    return moment(val).format('lll')
+  },
+
+  momentHumanizedDuration(startDate, endDate) {
+    const x = new moment(startDate)
+    const y = new moment(endDate)
+    const duration = moment.duration(y.diff(x))
+    const formatter = (val, append) => (val ? `${val} ${append} ` : '')
+    const strDays = formatter(duration.days(), 'days')
+    const strHour = formatter(duration.hours(), 'hours')
+    const strMin = formatter(duration.minutes(), 'min')
+    const strSec = formatter(duration.seconds(), 'sec')
+    return `${strDays}${strHour}${strMin}${strSec}`
   }
 }

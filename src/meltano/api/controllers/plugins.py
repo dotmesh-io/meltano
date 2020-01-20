@@ -1,4 +1,5 @@
 from itertools import groupby
+from flask import request, jsonify, g
 
 from meltano.core.compiler.project_compiler import ProjectCompiler
 from meltano.core.error import PluginInstallError
@@ -11,10 +12,12 @@ from meltano.core.project import Project
 from meltano.core.project_add_service import ProjectAddService
 from meltano.core.config_service import ConfigService
 from meltano.core.plugin_install_service import PluginInstallService
+from meltano.api.security import api_auth_required
+from meltano.api.security.readonly_killswitch import readonly_killswitch
+from meltano.api.api_blueprint import APIBlueprint
 
-from flask import Blueprint, request, jsonify, g
 
-pluginsBP = Blueprint("plugins", __name__, url_prefix="/api/v1/plugins")
+pluginsBP = APIBlueprint("plugins", __name__)
 
 
 @pluginsBP.errorhandler(PluginInstallError)
@@ -50,10 +53,10 @@ def installed():
     for plugin in sorted(config.plugins(), key=lambda x: x.name):
         try:
             definition = discovery.find_plugin(plugin.type, plugin.name)
+            merged_plugin_definition = {**definition.canonical(), **plugin.canonical()}
         except PluginNotFoundError:
-            definition = {}
+            merged_plugin_definition = {**plugin.canonical()}
 
-        merged_plugin_definition = {**definition.canonical(), **plugin.canonical()}
         merged_plugin_definition.pop("settings", None)
         merged_plugin_definition.pop("select", None)
 
@@ -62,10 +65,11 @@ def installed():
 
         installed_plugins[plugin.type].append(merged_plugin_definition)
 
-    return jsonify({**project.meltano, "plugins": installed_plugins})
+    return jsonify({**project.meltano.canonical(), "plugins": installed_plugins})
 
 
 @pluginsBP.route("/add", methods=["POST"])
+@readonly_killswitch
 def add():
     payload = request.get_json()
     plugin_type = PluginType(payload["plugin_type"])
@@ -79,6 +83,7 @@ def add():
 
 
 @pluginsBP.route("/install/batch", methods=["POST"])
+@readonly_killswitch
 def install_batch():
     payload = request.get_json()
     plugin_type = PluginType(payload["plugin_type"])
@@ -118,6 +123,7 @@ def install_batch():
 
 
 @pluginsBP.route("/install", methods=["POST"])
+@readonly_killswitch
 def install():
     payload = request.get_json()
     plugin_type = PluginType(payload["plugin_type"])

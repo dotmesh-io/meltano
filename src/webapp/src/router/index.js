@@ -1,6 +1,6 @@
 import Router from 'vue-router'
 
-import CreateScheduleModal from '@/components/pipelines/CreateScheduleModal'
+import CreatePipelineScheduleModal from '@/components/pipelines/CreatePipelineScheduleModal'
 import Design from '@/components/analyze/Design'
 import Extractors from '@/components/pipelines/Extractors'
 import ExtractorSettingsModal from '@/components/pipelines/ExtractorSettingsModal'
@@ -8,13 +8,11 @@ import Loaders from '@/components/pipelines/Loaders'
 import LoaderSettingsModal from '@/components/pipelines/LoaderSettingsModal'
 import LogModal from '@/components/pipelines/LogModal'
 import PipelineSchedules from '@/components/pipelines/PipelineSchedules'
-import Transforms from '@/components/pipelines/Transforms'
 
 import Analyze from '@/views/Analyze'
 import Dashboards from '@/views/Dashboards'
-import Model from '@/views/Model'
+import Dashboard from '@/views/Dashboard'
 import NotFound from '@/views/NotFound'
-import Orchestration from '@/views/Orchestration'
 import Pipelines from '@/views/Pipelines'
 
 const router = new Router({
@@ -85,17 +83,6 @@ const router = new Router({
           }
         },
         {
-          path: 'transform',
-          name: 'transforms',
-          components: {
-            default: Transforms
-          },
-          meta: {
-            isModal: false,
-            title: 'Meltano: Pipeline - Transform'
-          }
-        },
-        {
           path: 'schedule',
           name: 'schedules',
           components: {
@@ -108,10 +95,10 @@ const router = new Router({
         },
         {
           path: 'schedule/create',
-          name: 'createSchedule',
+          name: 'createPipelineSchedule',
           components: {
             default: PipelineSchedules,
-            createSchedule: CreateScheduleModal
+            createPipelineSchedule: CreatePipelineScheduleModal
           },
           meta: {
             isModal: true,
@@ -133,22 +120,6 @@ const router = new Router({
       ]
     },
     {
-      path: '/orchestrate/',
-      name: 'orchestration',
-      component: Orchestration,
-      meta: {
-        title: 'Meltano: Orchestration'
-      }
-    },
-    {
-      path: '/model/',
-      name: 'model',
-      component: Model,
-      meta: {
-        title: 'Meltano: Model'
-      }
-    },
-    {
       path: '/analyze/',
       name: 'analyze',
       component: Analyze,
@@ -157,35 +128,35 @@ const router = new Router({
       },
       children: [
         {
+          path: '/analyze/:namespace+/:model/:design/reports/:slug',
+          name: 'report',
+          component: Design,
+          meta: {
+            title: 'Meltano: Analyze - Report'
+          }
+        },
+        {
           path: '/analyze/:namespace+/:model/:design',
           name: 'analyzeDesign',
           component: Design,
           meta: {
             title: 'Meltano: Analyze - Model Design'
           }
-        },
-        {
-          path: '/analyze/:namespace+/:model/:design/reports/report/:slug',
-          name: 'report',
-          component: Design,
-          meta: {
-            title: 'Meltano: Analyze - Reports'
-          }
         }
       ]
     },
     {
-      path: '/dashboard/',
+      path: '/dashboards/',
       name: 'dashboards',
       component: Dashboards,
       meta: {
-        title: 'Meltano: Dashboard'
+        title: 'Meltano: Dashboards'
       }
     },
     {
-      path: '/dashboard/:slug',
+      path: '/dashboards/:slug',
       name: 'dashboard',
-      component: Dashboards,
+      component: Dashboard,
       meta: {
         title: 'Meltano: Dashboard'
       }

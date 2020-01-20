@@ -73,9 +73,15 @@ Component helpers related to Bulma's component classes when bulma-overrides does
   &:not(:last-child) {
     margin-bottom: 0rem;
   }
+}
 
-  @media screen and (min-width: $tablet) {
-    margin-left: 4.75rem;
+.dropdown {
+  .dropdown-content {
+    .dropdown-item {
+      &.is-active {
+        @extend .is-active-line-item;
+      }
+    }
   }
 }
 
@@ -105,10 +111,9 @@ Component helpers related to Bulma's component classes when bulma-overrides does
 
 .panel-block {
   &.is-active {
-    color: $interactive-secondary;
     border-left-color: $interactive-secondary;
     border-left-width: 2px;
-    @extend .has-background-white-ter;
+    @extend .is-active-line-item;
   }
 }
 
@@ -118,13 +123,8 @@ Layout helpers, often with names based on Bulma naming conventions
 */
 
 .view-body {
-  border: 1px solid $grey-lighter;
-  border-radius: $radius-large;
-  background-color: $white-ter;
-  padding: 1em;
-
   // Full view height - (navbar + breadcrumbs) - (.view-body top and bottom padding + extra padding to mitigate unwanted vertical scrollbar)
-  min-height: calc(100vh - 72px - 3.25rem);
+  min-height: calc(100vh - 72px - 5.25rem);
 
   &.is-fluid {
     margin-left: 0;
@@ -134,6 +134,7 @@ Layout helpers, often with names based on Bulma naming conventions
 
 .modal-card {
   overflow: visible; // Prevents clipping of dropdown and similar components in Modal
+  max-height: 90vh;
 
   &.is-narrow {
     max-width: 440px;
@@ -156,12 +157,13 @@ Layout helpers, often with names based on Bulma naming conventions
   }
 }
 
-.row-space-between {
+.h-space-between {
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: space-between;
 
-  .row-space-between-primary {
+  .h-space-between-primary {
     flex-grow: 1;
   }
 }
@@ -171,12 +173,20 @@ Layout helpers, often with names based on Bulma naming conventions
   font-style: italic;
 }
 
-.table td {
-  vertical-align: middle;
-}
+.table {
+  td {
+    vertical-align: middle;
+  }
 
-.table th span {
-  vertical-align: middle;
+  th span {
+    vertical-align: middle;
+  }
+
+  &.has-borderless-cells {
+    td {
+      @extend .is-borderless;
+    }
+  }
 }
 
 /*
@@ -190,6 +200,10 @@ Modifer helpers with names based on Bulma naming conventions
 
 .has-cursor-pointer {
   cursor: pointer;
+}
+
+.has-position-relative {
+  position: relative;
 }
 
 .has-text-underlined {
@@ -214,6 +228,10 @@ Modifer helpers with names based on Bulma naming conventions
 
 .is-flex-row {
   flex-direction: row;
+}
+
+.is-hcentered {
+  justify-content: center;
 }
 
 .is-thin {

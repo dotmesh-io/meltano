@@ -17,41 +17,6 @@ In order to contribute to Meltano, you will need the following:
 
 We welcome contributions, idea submissions, and improvements. In fact we may already have open issues labeled [Accepting Merge Requests] if you don't know where to start. Please see the contribution guidelines below for source code related contributions.
 
-```bash
-# Clone the Meltano repo
-git clone git@gitlab.com:meltano/meltano.git
-
-# Change directory into the Meltano project
-cd meltano
-
-# Optional, but it's best to have the latest pip
-pip3 install --upgrade pip
-
-# Optional, but it's best to have the latest setuptools
-pip3 install --upgrade setuptools
-
-# Optional, but it's recommended to create a virtual environment
-# in order to minimize side effects from unknown environment variable
-python -m venv ~/.venv/meltano-development
-
-# Activate your virtual environment
-source ~/.venv/meltano-development/bin/activate
-
-# Install all the dependencies
-pip3 install -r requirements.txt
-
-# Install dev dependencies with the edit flag on to detect changes
-# Note: you may have to escape the .`[dev]` argument on some shells, like zsh
-pip3 install -e .[dev]
-
-# Bundle the Meltano UI into the `meltano` package
-make bundle
-```
-
-Meltano is now installed and available at `meltano`, as long as you remain in your `meltano-development` virtual environment!
-
-This means that you're ready to start Meltano CLI development. For API and UI development, read on.
-
 ### Metrics (anonymous usage data) tracking
 
 As you contribute to Meltano, you may want to disable [metrics tracking](/docs/environment-variables.html#anonymous-usage-data) globally rather than by project. You can do this by setting the environment variable `MELTANO_DISABLE_TRACKING` to `True`:
@@ -61,21 +26,74 @@ As you contribute to Meltano, you may want to disable [metrics tracking](/docs/e
 export MELTANO_DISABLE_TRACKING=True
 ```
 
-## API Development
-
-For all changes that do not involve working on Meltano UI (front-end) itself, run the following command:
+## Setting Up Your Environment
 
 ```bash
-# Starts both a development build of the Meltano API and a production build of Meltano UI
+# Clone the Meltano repo
+git clone git@gitlab.com:meltano/meltano.git
+
+# Change directory into the Meltano project
+cd meltano
+
+# Optional, but it's best to have the latest pip
+pip install --upgrade pip
+
+# Optional, but it's best to have the latest setuptools
+pip install --upgrade setuptools
+
+# Optional, but it's recommended to create a virtual environment
+# in order to minimize side effects from unknown environment variable
+python -m venv ~/.venv/meltano-development
+
+# Activate your virtual environment
+source ~/.venv/meltano-development/bin/activate
+
+# Install all the dependencies
+pip install -r requirements.txt
+
+# Install dev dependencies with the edit flag on to detect changes
+# Note: you may have to escape the .`[dev]` argument on some shells, like zsh
+pip install -e .[dev]
+
+# Bundle the Meltano UI into the `meltano` package
+make bundle
+```
+
+Meltano is now installed and available at `meltano`, as long as you remain in your `meltano-development` virtual environment!
+
+This means that you're ready to start Meltano CLI development. For API and UI development, read on.
+
+## API Development
+
+This section of the guide provides guidance on how to work with the Meltano API, which serves as the backend of Meltano and is built with the [Python framework: Flask](https://github.com/pallets/flask).
+
+### Getting Setup
+
+After all of your dependencies installed, we recommend opening a new window/tab in your terminal so you can run the following commands:
+
+```bash
+# Create a new Meltano project
+meltano init $PROJECT_NAME
+
+# Change directory into your newly created project
+cd $PROJECT_NAME
+
+# Start a development build of the Meltano API and a production build of Meltano UI
 FLASK_ENV=development meltano ui
 ```
 
-The development build of the Meltano API should be available at <http://localhost:5000/>.
+The development build of the Meltano API & **production** build of the UI should now be available at <http://localhost:5000/>.
 
-:::warning Troubleshooting
-If you run into `/bin/sh: yarn: command not found`, double check that you've got [the prerequisites](https://www.meltano.com/docs/contributing.html#prerequisites) installed.
+::: tip
 
-On macOS, this can be solved by running `brew install yarn`.
+To debug your Python code, here is the recommended way to validate / debug your code:
+
+```python
+# Purpose: Start a debugger
+# Usage: Use as a one-line import / invocation for easier cleanup
+import pdb; pdb.set_trace()
+```
+
 :::
 
 ## UI Development
@@ -107,6 +125,60 @@ export MELTANO_UI_URL = ""
 ```
 
 ## Taps & Targets Development
+
+Watch ["How taps are built"](https://www.youtube.com/watch?v=aImidnW8nsU) for an explanation of how Singer taps (which form the basis for Meltano extractors) work, and what goes into building new ones or verifying and modifying existing ones for various types of APIs.
+
+Then watch ["How transforms are built"](https://www.youtube.com/watch?v=QRaCSKQC_74) for an explanation of how DBT transforms work, and what goes into building new ones for new data sources.
+
+### Changing discovery.yml
+
+#### `discovery.yml` version
+
+Whenever new functionality is introduced that changes the schema of `discovery.yml` (the exact properties it supports and their types), the `version` in `src/meltano/core/bundle/discovery.yml` and the `VERSION` constant in `src/meltano/core/plugin_discovery_service.py` must be incremented, so that older instances of Meltano don't attempt to download and parse a `discovery.yml` its parser is not compatible with.
+
+Changes to `discovery.yml` that only use existing properties do not constitute schema changes and do not require `version` to be incremented.
+
+#### Local changes to `discovery.yml`
+
+When you need to make changes to `discovery.yml`, these changes are not automatically detected inside of the `meltano` repo during development. While there are a few ways to solve this problem, it is recommended to create a symbolic link in order ensure that changes made inside of the `meltano` repo appear inside the Meltano project you initialized and are testing on.
+
+1. Get path for `discovery.yml` in the repo
+
+- Example: `/Users/bencodezen/Projects/meltano/src/meltano/core/bundle/discovery.yml`
+
+2. Open your Meltano project in your terminal
+
+3. Create a symbolic link by running the following command:
+
+```
+ln -s $YOUR_DISCOVERY_YML_PATH
+```
+
+Now, when you run the `ls -l` command, you should see something like:
+
+```
+bencodezen  staff   72 Nov 19 09:19 discovery.yml -> /Users/bencodezen/Projects/meltano/src/meltano/core/bundle/discovery.yml
+```
+
+Now, you can see your changes in `discovery.yml` live in your project during development! 🎉
+
+#### Connector settings
+
+Each extractor (tap) and loader (target) in the `discovery.yml` has a `settings` property. Nested under this property are a variable amount of individual settings. In the Meltano UI these settings are parsed to generate a configuration form. To improve the UX of this form, each setting has a number of optional properties:
+
+```yaml
+- settings:
+    - name: setting_name # Required (must match the connector setting name)
+      label: Setting Name # Optional (human friendly text display of the setting name)
+      value: '' # Optional (Use to set a default value)
+      placeholder: Ex. format_like_this # Optional (Use to set the input's placeholder default)
+      kind: string # Optional (Use for a first-class input control. Default is `string`, others are `hidden`, `boolean`, `date_iso8601`, `password`, `options`, & `file`)
+      description: Setting description # Optional (Use to provide inline context)
+      tooltip: Here is some more info... # Optional (use to provide additional inline context)
+      documentation: https://meltano.com/ # Optional (use to link to specific supplemental documentation)
+      protected: true # Optional (use in combination with `value` to provide an uneditable default)
+      env: SOME_API_KEY # Optional (use to delegate to an environment variable for overriding this setting's value)
+```
 
 ### For existing taps/targets
 
@@ -238,11 +310,10 @@ When testing your contributions you may need to ensure that your various `__pyca
 The below level hierarchy defines the back to front depth sorting of UI elements. Use it as a mental model to inform your UI decisions.
 
 - Level 1 - Primary navigation, sub-navigation, and signage - _Grey_
-- Level 2 - Task container (traditionally the page metaphor) - _White-ish Grey_
-- Level 3 - Primary task container(s) - _White w/Shadow_
-- Level 4 - Dropdowns, dialogs, pop-overs, etc. - _White w/Shadow_
-- Level 5 - Modals - _White w/Lightbox_
-- Level 6 - Toasts - _White w/Shadow + Message Color_
+- Level 2 - Primary task container(s) - _White w/Shadow_
+- Level 3 - Dropdowns, dialogs, pop-overs, etc. - _White w/Shadow_
+- Level 4 - Modals - _White w/Lightbox_
+- Level 5 - Toasts - _White w/Shadow + Message Color_
 
 #### Interactivity
 
@@ -295,7 +366,7 @@ Here is a technical breakdown:
 ## Merge Requests
 
 :::tip Searching for something to work on?
-Start off by looking at our [~"Accepting Merge Requests"][Accepting Merge Requests] label.
+Start off by looking at our [~"Accepting Merge Requests"][accepting merge requests] label.
 
 Keep in mind that this is only a suggestion: all improvements are welcome.
 :::

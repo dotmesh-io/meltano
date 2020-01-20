@@ -46,7 +46,7 @@ class SnowflakeConnector:
             results = connection.execute(query).fetchall()
 
             for result in results:
-                names.append(result["name"].upper())
+                names.append(result["name"].lower())
 
         return names
 
@@ -75,7 +75,7 @@ class SnowflakeConnector:
 
             for result in results:
                 names.append(
-                    f"{result['database_name'].upper()}.{result['name'].upper()}"
+                    f"{result['database_name'].lower()}.{result['name'].lower()}"
                 )
 
         return names
@@ -95,9 +95,9 @@ class SnowflakeConnector:
 
             for result in results:
                 names.append(
-                    f"{result['database_name'].upper()}"
-                    + f".{result['schema_name'].upper()}"
-                    + f".{result['name'].upper()}"
+                    f"{result['database_name'].lower()}"
+                    + f".{result['schema_name'].lower()}"
+                    + f".{result['name'].lower()}"
                 )
 
         return names
@@ -117,9 +117,9 @@ class SnowflakeConnector:
 
             for result in results:
                 names.append(
-                    f"{result['database_name'].upper()}"
-                    + f".{result['schema_name'].upper()}"
-                    + f".{result['name'].upper()}"
+                    f"{result['database_name'].lower()}"
+                    + f".{result['schema_name'].lower()}"
+                    + f".{result['name'].lower()}"
                 )
 
         return names
@@ -132,12 +132,12 @@ class SnowflakeConnector:
             results = connection.execute(query).fetchall()
 
             for result in results:
-                privilege = result["privilege"].upper()
-                granted_on = result["granted_on"].upper()
+                privilege = result["privilege"].lower()
+                granted_on = result["granted_on"].lower()
 
                 grants[privilege] = grants.get(privilege, {})
                 grants[privilege][granted_on] = grants[privilege].get(granted_on, [])
-                grants[privilege][granted_on].append(result["name"].upper())
+                grants[privilege][granted_on].append(result["name"].lower())
 
         return grants
 
@@ -149,7 +149,7 @@ class SnowflakeConnector:
             results = connection.execute(query).fetchall()
 
             for result in results:
-                roles.append(result["role"].upper())
+                roles.append(result["role"].lower())
 
         return roles
 
@@ -169,7 +169,10 @@ class SnowflakeConnector:
         new_name_parts = []
 
         for part in name_parts:
-            if re.match("^[0-9a-zA-Z_]*$", part) is None:
+            if (
+                re.match("^[0-9a-zA-Z_]*$", part) is None  # Proper formatting
+                and re.match('^".*"$', part) is None  # Already quoted
+            ):
                 new_name_parts.append(f'"{part}"')
             else:
                 new_name_parts.append(part)

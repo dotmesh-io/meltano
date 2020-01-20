@@ -23,6 +23,7 @@ export default function setup() {
       type: 'error'
     }
   )
+
   // Register a Global General Error Notification Toast.
   Vue.toasted.register('oops', 'Oops! Something went wrong.', {
     type: 'error',
@@ -58,9 +59,18 @@ export default function setup() {
           }
         },
         {
+          text: 'Disable',
+          onClick: (e, toastObject) => {
+            toastObject.goAway(0)
+            localStorage.setItem('hasDisabledTracking', true)
+            localStorage.setItem('hasAcknowledgedTracking', true)
+          }
+        },
+        {
           text: 'Got it',
           onClick: (e, toastObject) => {
             toastObject.goAway(0)
+            localStorage.setItem('hasDisabledTracking', false)
             localStorage.setItem('hasAcknowledgedTracking', true)
           }
         }
@@ -102,6 +112,17 @@ export default function setup() {
       closeOnSwipe: false,
       singleton: true,
       type: 'info'
+    }
+  )
+
+  // Register the `read-only` killswitch notification
+  Vue.toasted.register(
+    'readonly',
+    'Meltano currently runs in read-only mode.',
+    {
+      type: 'warning',
+      duration: 1250,
+      singleton: true
     }
   )
 }

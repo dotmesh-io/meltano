@@ -3,10 +3,10 @@ import { mapActions, mapGetters, mapMutations, mapState } from 'vuex'
 import Vue from 'vue'
 
 import capitalize from '@/filters/capitalize'
-import Chart from '@/components/analyze/Chart'
+import CreateDashboardModal from '@/components/dashboards/CreateDashboardModal'
 import Dropdown from '@/components/generic/Dropdown'
-import NewDashboardModal from '@/components/dashboards/NewDashboardModal'
 import QueryFilters from '@/components/analyze/QueryFilters'
+import ResultChart from '@/components/analyze/ResultChart'
 import ResultTable from '@/components/analyze/ResultTable'
 import utils from '@/utils/utils'
 
@@ -16,16 +16,16 @@ export default {
     capitalize
   },
   components: {
-    Chart,
+    CreateDashboardModal,
     Dropdown,
-    NewDashboardModal,
     QueryFilters,
+    ResultChart,
     ResultTable
   },
   data() {
     return {
       isInitialized: false,
-      isNewDashboardModalOpen: false
+      isCreateDashboardModalOpen: false
     }
   },
   computed: {
@@ -38,7 +38,6 @@ export default {
       'design',
       'filterOptions',
       'hasSQLError',
-      'loader',
       'isAutoRunQuery',
       'isLoadingQuery',
       'reports',
@@ -57,16 +56,11 @@ export default {
       'hasChartableResults',
       'hasFilters',
       'hasJoins',
-      'isLoaderSqlite',
+      'hasResults',
       'resultsCount',
       'showJoinColumnAggregateHeader'
     ]),
     ...mapState('dashboards', ['dashboards']),
-    ...mapState('plugins', ['installedPlugins']),
-
-    canToggleTimeframe() {
-      return !this.isLoaderSqlite
-    },
 
     hasActiveReport() {
       return Object.keys(this.activeReport).length > 0
@@ -84,35 +78,32 @@ export default {
         this.$store.dispatch('designs/limitSet', value)
         this.$store.dispatch('designs/getSQL', { run: false })
       }
-    },
-
-    loader: {
-      get() {
-        return this.$store.getters['designs/getLoader']
-      },
-      set(value) {
-        this.$store.commit('designs/setLoader', value)
-
-        // set the default loader for unknown designs
-        localStorage.setItem('loader', value)
-
-        // set the connection for this specific design
-        localStorage.setItem(
-          `loader:${this.currentModel}:${this.currentDesign}`,
-          value
-        )
-      }
     }
   },
   beforeDestroy() {
     this.$store.dispatch('designs/resetDefaults')
   },
+  /*
+  These beforeRouteEnter|Update lifecycle hooks work in tandem with changeReport()'s route update.
+  Both hooks are required (Update for locally sourced route changes & Enter for globally sourced route changes)
+  */
+  beforeRouteEnter(to, from, next) {
+    next(vm => {
+      vm.reinitialize()
+    })
+  },
+  /*
+  These beforeRouteEnter|Update lifecycle hooks work in tandem with changeReport()'s route update.
+  Both hooks are required (Update for locally sourced route changes & Enter for globally sourced route changes)
+  */
   beforeRouteUpdate(to, from, next) {
-    this.$store.dispatch('designs/resetDefaults').then(this.initializeDesign)
     next()
+
+    // it is crucial to wait after `next` is called so
+    // the route parameters are updated.
+    this.reinitialize()
   },
   created() {
-    this.initializeDesign()
     this.initializeSettings()
   },
   methods: {
@@ -126,6 +117,11 @@ export default {
 
     aggregateSelected(aggregate) {
       this.$store.dispatch('designs/toggleAggregate', aggregate)
+    },
+
+    changeReport(report) {
+      // Let route lifecycle hooks delegate update responsibility
+      this.$router.push({ name: 'report', params: report })
     },
 
     columnSelected(column) {
@@ -146,19 +142,8 @@ export default {
         design,
         slug
       })
-      const uponPlugins = this.$store.dispatch('plugins/getInstalledPlugins')
 
-      Promise.all([uponDesign, uponPlugins]).then(() => {
-        const defaultLoader =
-          localStorage.getItem(
-            `loader:${this.currentModel}:${this.currentDesign}`
-          ) ||
-          localStorage.getItem('loader') ||
-          this.installedPlugins.loaders[0].name
-
-        // don't use the setter here not to update the user's preferences
-        this.$store.commit('designs/setLoader', defaultLoader)
-
+      uponDesign.then(() => {
         // preselect if not loading a report
         if (!slug && this.isAutoRunQuery) {
           this.preselectAttributes()
@@ -196,23 +181,17 @@ export default {
       this.$store.dispatch('designs/expandJoinRow', join)
     },
 
-    loadReport(report) {
-      this.$store
-        .dispatch('designs/loadReport', { name: report.name })
-        .then(() => {
-          this.$router.push({ name: 'report', params: report })
-        })
-    },
-
     preselectAttributes() {
       const finder = collectionName =>
         this.design.relatedTable[collectionName].find(
           attribute => !attribute.hidden
         )
+
       const column = finder('columns')
       if (column) {
         this.columnSelected(column)
       }
+
       const aggregate = finder('aggregates')
       if (aggregate) {
         this.columnSelected(aggregate)
@@ -223,6 +202,12 @@ export default {
       }
     },
 
+    reinitialize() {
+      return this.$store
+        .dispatch('designs/resetDefaults')
+        .then(this.initializeDesign)
+    },
+
     saveReport() {
       const reportName = this.saveReportSettings.name
       this.$store
@@ -230,9 +215,7 @@ export default {
         .then(() => {
           Vue.toasted.global.success(`Report Saved - ${reportName}`)
         })
-        .catch(error => {
-          Vue.toasted.global.error(error.response.data.code)
-        })
+        .catch(this.$error.handle)
     },
 
     setChartType(chartType) {
@@ -255,9 +238,6 @@ export default {
     },
 
     timeframeSelected(timeframe) {
-      if (!this.canToggleTimeframe) {
-        return
-      }
       this.$store.dispatch('designs/toggleTimeframe', timeframe)
     },
 
@@ -265,14 +245,27 @@ export default {
       const methodName = this.isActiveReportInDashboard(dashboard)
         ? 'removeReportFromDashboard'
         : 'addReportToDashboard'
-      this.$store.dispatch(`dashboards/${methodName}`, {
-        reportId: this.activeReport.id,
-        dashboardId: dashboard.id
-      })
+      this.$store
+        .dispatch(`dashboards/${methodName}`, {
+          reportId: this.activeReport.id,
+          dashboardId: dashboard.id
+        })
+        .then(() => {
+          Vue.toasted.global.success(
+            `${this.activeReport.name} successful saved to ${dashboard.name}.`
+          )
+        })
+        .catch(error => {
+          Vue.toasted.global.error(
+            `${this.activeReport.name} was not saved to ${
+              dashboard.name
+            }. [Error code: ${error.response.data.code}]`
+          )
+        })
     },
 
-    toggleNewDashboardModal() {
-      this.isNewDashboardModalOpen = !this.isNewDashboardModalOpen
+    toggleCreateDashboardModal() {
+      this.isCreateDashboardModalOpen = !this.isCreateDashboardModalOpen
     },
 
     updateReport() {
@@ -286,7 +279,7 @@ export default {
 
 <template>
   <section>
-    <div class="columns is-vcentered">
+    <div class="columns is-vcentered v-min-4-5r">
       <div class="column">
         <div class="is-grouped is-pulled-left">
           <div
@@ -315,9 +308,9 @@ export default {
                   data-test-id="button-new-dashboard"
                   class="dropdown-item"
                   data-dropdown-auto-close
-                  @click="toggleNewDashboardModal()"
+                  @click="toggleCreateDashboardModal()"
                 >
-                  New Dashboard
+                  Create Dashboard
                 </a>
 
                 <template v-if="dashboards.length">
@@ -327,9 +320,9 @@ export default {
                     :key="dashboard.id"
                     class="dropdown-item"
                   >
-                    <div class="row-space-between">
+                    <div class="h-space-between">
                       <label
-                        class="row-space-between-primary has-cursor-pointer is-unselectable"
+                        class="h-space-between-primary has-cursor-pointer is-unselectable"
                         for="'checkbox-' + dashboard.id"
                         @click.stop="toggleActiveReportInDashboard(dashboard)"
                       >
@@ -425,27 +418,18 @@ export default {
                 <a
                   v-for="report in reports"
                   :key="report.name"
+                  :class="{
+                    'is-active': activeReport.id === report.id
+                  }"
                   class="dropdown-item"
                   data-dropdown-auto-close
-                  @click="loadReport(report)"
+                  @click="changeReport(report)"
                 >
                   {{ report.name }}
                 </a>
               </div>
             </Dropdown>
           </p>
-
-          <div v-if="isInitialized" class="control">
-            <div class="select">
-              <select v-model="loader" name="loader">
-                <option
-                  v-for="loaderPlugin in installedPlugins.loaders"
-                  :key="loaderPlugin.name"
-                  >{{ loaderPlugin.name }}</option
-                >
-              </select>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -583,21 +567,26 @@ export default {
               </label>
             </div>
 
-            <nav class="panel is-unselectable">
+            <nav class="panel is-size-7	is-unselectable">
               <!-- Base table first followed by join tables -->
               <template>
                 <a
                   class="panel-block
-                  has-background-white-bis
-                  has-text-grey
+                  table-heading
                   is-expandable"
                   :class="{ 'is-collapsed': design.relatedTable.collapsed }"
                   @click="tableRowClicked(design.relatedTable)"
                 >
-                  <span class="icon is-small panel-icon">
-                    <font-awesome-icon icon="table"></font-awesome-icon>
+                  <span class="icon is-small">
+                    <font-awesome-icon
+                      :icon="
+                        design.relatedTable.collapsed ? 'caret-down' : 'table'
+                      "
+                    ></font-awesome-icon>
                   </span>
-                  {{ design.label }}
+                  <span class="has-text-weight-bold">
+                    {{ design.label }}
+                  </span>
                 </a>
               </template>
               <template v-if="!design.relatedTable.collapsed">
@@ -606,7 +595,8 @@ export default {
                     showJoinColumnAggregateHeader(design.relatedTable.columns)
                   "
                   class="panel-block
-                    panel-block-heading
+                    attribute-heading
+                    has-text-weight-semibold
                     has-background-white"
                 >
                   Columns
@@ -614,7 +604,7 @@ export default {
                 <template v-for="timeframe in design.relatedTable.timeframes">
                   <a
                     :key="timeframe.label"
-                    class="panel-block dimension-group"
+                    class="panel-block timeframe"
                     :class="{ 'is-active': timeframe.selected }"
                     @click="timeframeSelected(timeframe)"
                   >
@@ -667,7 +657,8 @@ export default {
                     )
                   "
                   class="panel-block
-                    panel-block-heading
+                    attribute-heading
+                    has-text-weight-semibold
                     has-background-white"
                 >
                   Aggregates
@@ -706,16 +697,20 @@ export default {
                   <a
                     :key="join.label"
                     class="panel-block
-                      has-background-white-bis
-                      has-text-grey
+                      table-heading
+                      analyze-join-table
                       is-expandable"
                     :class="{ 'is-collapsed': join.collapsed }"
                     @click="joinRowClicked(join)"
                   >
-                    <span class="icon is-small panel-icon">
-                      <font-awesome-icon icon="table"></font-awesome-icon>
+                    <span class="icon is-small">
+                      <font-awesome-icon
+                        :icon="join.collapsed ? 'caret-down' : 'table'"
+                      ></font-awesome-icon>
                     </span>
-                    {{ join.label }}
+                    <span class="has-text-weight-bold">
+                      {{ join.label }}
+                    </span>
                   </a>
                   <template v-if="!join.collapsed">
                     <!-- eslint-disable-next-line vue/require-v-for-key -->
@@ -724,8 +719,8 @@ export default {
                         showJoinColumnAggregateHeader(join.relatedTable.columns)
                       "
                       class="panel-block
-                      panel-block-heading
-                      has-text-weight-light
+                      attribute-heading
+                      has-text-weight-semibold
                       has-background-white"
                     >
                       Columns
@@ -735,18 +730,11 @@ export default {
                         :key="timeframe.label"
                         class="panel-block timeframe"
                         :class="{
-                          'is-active': timeframe.selected,
-                          'is-sqlite-unsupported': isLoaderSqlite
+                          'is-active': timeframe.selected
                         }"
                         @click="timeframeSelected(timeframe)"
                       >
                         {{ timeframe.label }}
-                        <div
-                          v-if="isLoaderSqlite"
-                          class="sqlite-unsupported-container"
-                        >
-                          <small>Unsupported by SQLite</small>
-                        </div>
                       </a>
                       <template v-if="timeframe.selected">
                         <template v-for="period in timeframe.periods">
@@ -797,7 +785,8 @@ export default {
                         )
                       "
                       class="panel-block
-                      panel-block-heading
+                      attribute-heading
+                      has-text-weight-semibold
                       has-background-white"
                     >
                       Aggregates
@@ -917,29 +906,8 @@ export default {
             </div>
           </div>
 
-          <!-- charts tab -->
-          <div>
-            <div v-if="hasChartableResults" class="chart-toggles">
-              <chart
-                :chart-type="chartType"
-                :results="results"
-                :result-aggregates="resultAggregates"
-              ></chart>
-            </div>
-            <div v-if="!hasChartableResults">
-              <div class="box is-radiusless is-shadowless has-text-centered">
-                <p>
-                  Run a query with at least one aggregate selected or load a
-                  report
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <hr />
-
-          <!-- results/SQL tab -->
-          <div>
+          <template v-if="isInitialized">
+            <!-- SQL error -->
             <div v-if="hasSQLError" class="notification is-danger">
               <button class="delete" @click="resetErrorMessage"></button>
               <ul>
@@ -949,16 +917,55 @@ export default {
               </ul>
             </div>
 
-            <ResultTable></ResultTable>
-          </div>
+            <div>
+              <article
+                v-if="!isLoadingQuery && !hasResults"
+                class="message is-info"
+              >
+                <div class="message-body">
+                  <div class="content">
+                    <p>
+                      Sometimes a query has no results. When this happens, try
+                      one or more of the following:
+                    </p>
+                    <ul>
+                      <li>
+                        Change the <strong>Column</strong> and/or
+                        <strong>Aggregate</strong> selections in the
+                        <em>Attributes</em> panel
+                      </li>
+                      <li>
+                        Add, remove, or update one of the
+                        <a
+                          class="has-text-underlined"
+                          @click.stop="jumpToFilters"
+                          ><strong>Filters</strong></a
+                        >
+                      </li>
+                    </ul>
+                    <p v-if="!isAutoRunQuery">
+                      Then click the <em>Run</em> button.
+                    </p>
+                  </div>
+                </div>
+              </article>
 
-          <!-- New Dashboard Modal -->
-          <NewDashboardModal
-            v-if="isNewDashboardModalOpen"
+              <template v-else>
+                <ResultChart :is-loading="isLoadingQuery"></ResultChart>
+                <hr />
+                <ResultTable :is-loading="isLoadingQuery"></ResultTable>
+              </template>
+            </div>
+          </template>
+          <progress v-else class="progress is-small is-info"></progress>
+
+          <!-- Create Dashboard Modal -->
+          <CreateDashboardModal
+            v-if="isCreateDashboardModalOpen"
             :report="activeReport"
-            @close="toggleNewDashboardModal"
+            @close="toggleCreateDashboardModal"
           >
-          </NewDashboardModal>
+          </CreateDashboardModal>
         </div>
       </div>
     </div>
@@ -968,43 +975,36 @@ export default {
 <style lang="scss">
 .panel-block {
   position: relative;
+
+  &.analyze-join-table {
+    margin-top: 1.5rem;
+    border-top: 1px solid $grey-lighter;
+  }
+
   &.space-between {
     justify-content: space-between;
   }
-  &.indented {
-    padding-left: 1.75rem;
-  }
-  &.panel-block-heading {
-    padding: 0.25rem 0.75rem;
-    font-size: 0.75rem;
-    &:hover {
-      background: white;
-    }
-  }
-  &.is-sqlite-unsupported {
-    opacity: 0.5;
-    cursor: not-allowed;
-    .sqlite-unsupported-container {
-      display: flex;
-      flex-direction: row;
-      justify-content: flex-end;
-      flex-grow: 1;
 
-      small {
-        font-size: 60%;
-        font-style: italic;
-      }
-    }
-    &.timeframe {
-      &::after {
-        display: none;
-      }
+  &.indented {
+    padding-left: 1.5rem;
+  }
+
+  &.attribute-heading {
+    cursor: auto;
+    padding: 0.25rem 0.75rem;
+  }
+
+  &.table-heading {
+    padding: 0.75rem 0.5rem;
+
+    .icon {
+      margin-right: 0.5rem;
     }
   }
 
   &.timeframe {
     &::after {
-      border: 3px solid #363636;
+      border: 3px solid $grey-darker;
       border-radius: 2px;
       border-right: 0;
       border-top: 0;

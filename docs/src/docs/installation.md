@@ -5,11 +5,19 @@ description: Meltano is easy to install on your local machine or in the cloud, i
 
 # Installation
 
-::: info
-Meltano officially released its first major version (v1)! Make sure to install the latest if you're still on an older version of Meltano.
-:::
+This section provides guides for getting setup with Meltano.
 
-This section provides step-by-step guides for installing Meltano in various environments. Currently, we provide detailed intructions for:
+## Free Hosted Meltano Dashboards
+
+In November, we released Meltano as a free hosted product! This eliminates the hosting and installation hassle with a concierge-style setup so you can start building dashboards faster.
+
+Fill out [this form](https://meltano.typeform.com/to/NJPwxv) to get started with a free hosted Meltano account. We will contact you to schedule a setup time and learn everything we can about your needs.
+
+<a href="https://meltano.typeform.com/to/NJPwxv" class="button is-purple is-filled">Get started with your free hosted Meltano dashboard</a>
+
+## Self Hosted Solutions
+
+For instructions on how to setup your own Meltano instance, check out:
 
 - [DigitalOcean One-Click Installer](/docs/deployment.html#digitalocean-marketplace)
 - [Amazon Web Services (AWS)](/docs/deployment.html#amazon-web-services-aws)
@@ -19,8 +27,8 @@ This section provides step-by-step guides for installing Meltano in various envi
 
 DigitalOcean provides a simple container for spinning up a server where Meltano can be deployed to the Cloud. [Install the Meltano 1-Click App in the DigitalOcean Marketplace](https://marketplace.digitalocean.com/apps/meltano?action=deploy&refcode=1c4623f89322)
 
-:::tip Get $50 Worth of DigitalOcean Credits for Free
-When you create a new DigitalOcean account using [this link](https://marketplace.digitalocean.com/apps/meltano?action=deploy&refcode=1c4623f89322) (which contains our referral code) you will receive $50 of free credit over 30 days.
+:::tip Get $100 of DigitalOcean Credit for Free!
+When you create a new DigitalOcean account using [this link](https://marketplace.digitalocean.com/apps/meltano?action=deploy&refcode=1c4623f89322) (which contains our referral code) you will receive $100 of free credit over 60 days.
 :::
 
 Please note, at times the Meltano version on DigitalOcean may be slightly behind the [current PyPi version](https://pypi.org/project/meltano/).
@@ -93,7 +101,6 @@ In this section, we will be going over how you can deploy a Meltano Docker image
 - **Memory Limits (MiB)**: Soft limit 1024
 - **Port mappings**:
   - 5000/tcp (meltano)
-  - 5010/tcp (airflow)
 
 1. Click `Update` button to finish setting up your container defintion
 1. Click `Edit` next to the _Task defintion_ heading
@@ -185,7 +192,7 @@ Once you complete the cluster setup, you should be brought to the detail page fo
 In this section, we will install Meltano as an application you can access locally from your browser and on the command line. If you prefer to install to Docker, please view the installation instructions [here](/docs/installation.html#installing-on-docker).
 
 ::: tip
-We do not have a double click installer at this time, but [it is in our roadmap](https://gitlab.com/meltano/meltano/issues/1107) and we will be sure to update this page when we do!
+We do not have a double click installer at this time, but [it is on our roadmap](https://gitlab.com/meltano/meltano/issues/1107) and we will be sure to update this page when we do!
 :::
 
 ### Requirements
@@ -219,18 +226,18 @@ If you've installed Python 3, but are not getting the result you expect, you may
 `pip` is a package installer that comes automatically with Python 3+. This is also what we will be using to install Meltano. Here are some commands related to `pip` that may be of interest:
 
 ```bash
-# Check for current version of pip using pip3
+# Check for current version of pip
 # to ensure that it is using the Python3 pip
-pip3 --version
+pip --version
 
 # Update pip
-pip3 install --upgrade pip
+pip install --upgrade pip
 ```
 
 #### Virtual Environment
 
 ::: danger IMPORTANT
-Unless you are building a Docker image, It is **strongly recommended** that Meltano be installed inside a virtual environment in order to avoid potential system conflicts that may be difficult to debug.
+Unless you are building a Docker image, it is **strongly recommended** that Meltano be installed inside a virtual environment in order to avoid potential system conflicts that may be difficult to debug.
 :::
 
 **Why use a virtual environment?**
@@ -280,7 +287,7 @@ You can deactivate a virtual environment by typing `deactivate` in your shell.
 Now that you have your virtual environment set up and running, run the following command to install the Meltano package:
 
 ```bash
-pip3 install meltano
+pip install meltano
 ```
 
 Once the installation completes, you can check if it was successful by running:
@@ -399,7 +406,7 @@ Now that we have data in your database, let's add the corresponding model bundle
 ```
 docker run -v $(pwd):/project \
              -w /project \
-             meltano/meltano add model model-carbon-intensity-sqlite
+             meltano/meltano add model model-carbon-intensity
 ```
 
 ## Upgrading Meltano

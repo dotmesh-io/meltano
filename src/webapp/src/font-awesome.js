@@ -16,10 +16,13 @@ import {
   faChartLine,
   faChartPie,
   faCheck,
+  faCheckCircle,
   faDotCircle,
   faDraftingCompass,
   faExclamationTriangle,
+  faExternalLinkSquareAlt,
   faFileAlt,
+  faFileUpload,
   faFilter,
   faGift,
   faGlobeAmericas,
@@ -37,6 +40,7 @@ import {
   faTable,
   faThLarge,
   faThList,
+  faTrashAlt,
   faUser
 } from '@fortawesome/free-solid-svg-icons'
 import {
@@ -63,10 +67,13 @@ export default {
     library.add(faChartLine)
     library.add(faChartPie)
     library.add(faCheck)
+    library.add(faCheckCircle)
     library.add(faDotCircle)
     library.add(faDraftingCompass)
     library.add(faExclamationTriangle)
+    library.add(faExternalLinkSquareAlt)
     library.add(faFileAlt)
+    library.add(faFileUpload)
     library.add(faFilter)
     library.add(faGift)
     library.add(faGlobeAmericas)
@@ -84,6 +91,7 @@ export default {
     library.add(faTable)
     library.add(faThLarge)
     library.add(faThList)
+    library.add(faTrashAlt)
     library.add(faUser)
 
     Vue.component('font-awesome-icon', FontAwesomeIcon)

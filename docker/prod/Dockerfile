@@ -5,6 +5,10 @@ WORKDIR /meltano
 
 # building the code
 COPY . .
+
+# this enables the build process to have access to local
+# `meltano` module
+ENV PYTHONPATH=src/
 RUN make sdist
 
 FROM $BASE_IMAGE as runtime
@@ -22,9 +26,6 @@ WORKDIR /project
 
 # meltano ui
 EXPOSE 5000
-
-# airflow ui
-EXPOSE 5010
 
 ENTRYPOINT ["meltano"]
 CMD ["ui"]

@@ -37,6 +37,13 @@ module.exports = {
           'https://fonts.googleapis.com/css?family=IBM+Plex+Sans&display=swap'
       }
     ],
+    [
+      'meta',
+      {
+        name: 'google-site-verification',
+        content: 'bOaR0Nxus1Au31YuQX0zMqkNZV_tbAoIr7WkX4crUgI'
+      }
+    ],
     ['meta', { name: 'msapplication-TileColor', content: '#da532c' }],
     ['meta', { name: 'theme-color', content: '#ffffff' }]
   ],
@@ -44,16 +51,15 @@ module.exports = {
   themeConfig: {
     nav: [
       {
-        text: 'Documentation',
-        link: '/docs/installation.html'
+        text: 'How It Works',
+        link: '/docs/getting-started.html#connect-a-data-source'
       },
       { text: 'Blog', link: 'https://www.meltano.com/blog', disableIcon: true },
       {
         text: 'Newsletter',
         link: 'https://meltano.substack.com',
         disableIcon: true
-      },
-      { text: 'Press', link: '/press/' }
+      }
     ],
     sidebar: {
       '/docs': [
@@ -68,7 +74,12 @@ module.exports = {
         '/docs/architecture',
         '/docs/contributing',
         '/docs/getting-help',
+        '/docs/responsible-disclosure',
         '/docs/roadmap'
+      ],
+      '/handbook/engineering/meltanodata-guide': [
+        '/handbook/engineering/meltanodata-guide/',
+        '/handbook/engineering/meltanodata-guide/controller-node.html'
       ],
       '/plugins': [
         '/docs/',
@@ -82,6 +93,7 @@ module.exports = {
         '/docs/architecture',
         '/docs/contributing',
         '/docs/getting-help',
+        '/docs/responsible-disclosure',
         '/docs/roadmap'
       ],
       '/tutorials': [
@@ -96,6 +108,7 @@ module.exports = {
         '/docs/architecture',
         '/docs/contributing',
         '/docs/getting-help',
+        '/docs/responsible-disclosure',
         '/docs/roadmap'
       ]
     },

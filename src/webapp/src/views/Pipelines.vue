@@ -22,12 +22,8 @@ export default {
           routeMatches: ['loaders', 'loaderSettings']
         },
         {
-          name: 'transforms',
-          routeMatches: ['transforms']
-        },
-        {
           name: 'schedules',
-          routeMatches: ['schedules', 'createSchedule', 'runLog']
+          routeMatches: ['schedules', 'createPipelineSchedule', 'runLog']
         }
       ]
     }
@@ -35,11 +31,10 @@ export default {
   computed: {
     ...mapGetters('plugins', [
       'getIsStepLoadersMinimallyValidated',
-      'getIsStepTransformsMinimallyValidated',
       'getIsStepScheduleMinimallyValidated'
     ]),
     ...mapState('plugins', ['installedPlugins']),
-    ...mapState('configuration', ['installedPlugins']),
+    ...mapState('orchestration', ['installedPlugins']),
     currentStep() {
       return this.steps.find(step =>
         step.routeMatches.find(match => this.$route.name === match)
@@ -111,31 +106,11 @@ export default {
         <div
           class="step-item"
           :class="{
-            'is-active': getIsActiveStep('transforms'),
-            'is-completed': getIsStepTransformsMinimallyValidated
-          }"
-        >
-          <div class="step-marker">3</div>
-          <div class="step-details">
-            <button
-              class="step-title button is-interactive-navigation"
-              :class="{ 'is-active': getIsActiveStep('transforms') }"
-              :disabled="!getIsStepTransformsMinimallyValidated"
-              @click="setStep('transforms')"
-            >
-              Transform
-            </button>
-            <p>Transform Raw Data for Analytics</p>
-          </div>
-        </div>
-        <div
-          class="step-item"
-          :class="{
             'is-active': getIsActiveStep('schedule'),
             'is-completed': getIsStepScheduleMinimallyValidated
           }"
         >
-          <div class="step-marker">4</div>
+          <div class="step-marker">3</div>
           <div class="step-details">
             <button
               class="step-title button is-interactive-navigation is-outlined"
@@ -145,7 +120,7 @@ export default {
             >
               Schedule
             </button>
-            <p>Automate Extract, Load, & Transform</p>
+            <p>Automate Extract & Load</p>
           </div>
         </div>
 

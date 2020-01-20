@@ -1,3 +1,5 @@
+import Vue from 'vue'
+
 import lodash from 'lodash'
 
 import dashboardsApi from '../../api/dashboards'
@@ -8,15 +10,36 @@ const defaultState = utils.deepFreeze({
   activeDashboard: {},
   activeDashboardReports: [],
   dashboards: [],
+  isInitializing: true,
   reports: []
 })
 
 const actions = {
   addReportToDashboard({ commit, dispatch }, data) {
     commit('addReportToDashboard', data)
-    dashboardsApi.addReportToDashboard(data).then(response => {
+    return dashboardsApi.addReportToDashboard(data).then(response => {
       dispatch('updateCurrentDashboard', response.data)
     })
+  },
+
+  deleteDashboard({ commit }, dashboard) {
+    let status = {
+      dashboard,
+      isDeleting: true
+    }
+    commit('setDashboardStatus', status)
+
+    return dashboardsApi
+      .deleteDashboard(dashboard)
+      .then(() => {
+        commit('deleteDashboard', dashboard)
+      })
+      .finally(() => {
+        commit(
+          'setDashboardStatus',
+          Object.assign(status, { isDeleting: false })
+        )
+      })
   },
 
   getActiveDashboardReportsWithQueryResults({ commit, state }) {
@@ -33,29 +56,26 @@ const actions = {
   },
 
   getDashboards({ commit }) {
-    return new Promise(resolve => {
-      dashboardsApi.getDashboards().then(response => {
-        const dashboards = response.data
-        commit('setDashboards', dashboards)
-        resolve()
-      })
+    return dashboardsApi.getDashboards().then(response => {
+      commit('setDashboards', response.data)
     })
   },
 
   getReports({ commit }) {
-    return new Promise(resolve => {
-      reportsApi.loadReports().then(response => {
-        commit('setReports', response.data)
-        resolve()
-      })
-    })
+    return reportsApi
+      .loadReports()
+      .then(response => commit('setReports', response.data))
   },
 
-  initialize({ dispatch }, slug) {
+  initialize({ commit, dispatch }, slug) {
+    commit('setIsInitialzing', true)
     const promiseGetReports = dispatch('getReports')
     const promiseGetDashboards = dispatch('getDashboards')
     return Promise.all([promiseGetReports, promiseGetDashboards]).then(() => {
-      dispatch('preloadDashboard', slug)
+      if (slug) {
+        dispatch('preloadDashboard', slug)
+      }
+      commit('setIsInitialzing', false)
     })
   },
 
@@ -75,8 +95,9 @@ const actions = {
 
   removeReportFromDashboard({ commit, dispatch }, data) {
     commit('removeReportFromDashboard', data)
-    dashboardsApi.removeReportFromDashboard(data).then(response => {
-      dispatch('updateCurrentDashboard', response.data)
+
+    return dashboardsApi.removeReportFromDashboard(data).then(response => {
+      return dispatch('updateCurrentDashboard', response.data)
     })
   },
 
@@ -88,7 +109,7 @@ const actions = {
   saveDashboard({ dispatch, commit }, data) {
     return dashboardsApi.saveDashboard(data).then(response => {
       commit('addSavedDashboardToDashboards', response.data)
-      return dispatch('updateCurrentDashboard', response.data)
+      dispatch('updateCurrentDashboard', response.data)
     })
   },
 
@@ -97,6 +118,7 @@ const actions = {
       const dashboard = response.data
       commit('setCurrentDashboard', dashboard)
       commit('addSavedDashboardToDashboards', dashboard)
+
       dispatch('addReportToDashboard', {
         reportId: report.id,
         dashboardId: dashboard.id
@@ -106,6 +128,12 @@ const actions = {
 
   updateCurrentDashboard({ commit }, dashboard) {
     commit('setCurrentDashboard', dashboard)
+  },
+
+  updateDashboard({ commit }, payload) {
+    return dashboardsApi.updateDashboard(payload).then(response => {
+      commit('setDashboard', response.data)
+    })
   }
 }
 
@@ -119,6 +147,11 @@ const mutations = {
 
   addSavedDashboardToDashboards(state, dashboard) {
     state.dashboards.push(dashboard)
+  },
+
+  deleteDashboard(state, dashboard) {
+    const idx = state.dashboards.indexOf(dashboard)
+    state.dashboards.splice(idx, 1)
   },
 
   removeReportFromDashboard(state, idsPayload) {
@@ -143,8 +176,22 @@ const mutations = {
     state.activeDashboard = dashboard
   },
 
+  setDashboard(state, dashboard) {
+    const target = state.dashboards.find(item => item.id === dashboard.id)
+    const idx = state.dashboards.indexOf(target)
+    state.dashboards[idx] = dashboard
+  },
+
   setDashboards(state, dashboards) {
     state.dashboards = dashboards
+  },
+
+  setDashboardStatus(_, { dashboard, isDeleting = false }) {
+    Vue.set(dashboard, 'isDeleting', isDeleting)
+  },
+
+  setIsInitialzing(state, value) {
+    state.isInitializing = value
   },
 
   setReports(state, reports) {

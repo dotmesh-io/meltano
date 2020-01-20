@@ -1,19 +1,27 @@
 <script>
 import Breadcrumbs from '@/components/navigation/Breadcrumbs'
 import MainNav from '@/components/navigation/MainNav'
+import PromoBanner from '@/components/generic/PromoBanner'
 
 export default {
   name: 'App',
   components: {
     Breadcrumbs,
-    MainNav
+    MainNav,
+    PromoBanner
+  },
+  computed: {
+    isMeltanoDemoSite() {
+      return window.location.host === 'meltano.meltanodata.com'
+    }
   },
   created() {
     this.$store.dispatch('system/check')
-    this.acknowledgeAnalyticsTracking()
+    this.$store.dispatch('system/fetchIdentity')
+    this.tryAcknowledgeAnalyticsTracking()
   },
   methods: {
-    acknowledgeAnalyticsTracking() {
+    tryAcknowledgeAnalyticsTracking() {
       if (this.$flask.isSendAnonymousUsageStats) {
         const hasAcknowledgedTracking =
           'hasAcknowledgedTracking' in localStorage &&
@@ -29,6 +37,7 @@ export default {
 
 <template>
   <div id="app">
+    <PromoBanner v-if="isMeltanoDemoSite"></PromoBanner>
     <main-nav></main-nav>
     <Breadcrumbs></Breadcrumbs>
     <router-view />

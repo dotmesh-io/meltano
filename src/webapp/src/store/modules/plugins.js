@@ -4,6 +4,7 @@ import lodash from 'lodash'
 
 import pluginsApi from '../../api/plugins'
 import utils from '@/utils/utils'
+import pluginUtils from '@/utils/plugins'
 
 const defaultState = utils.deepFreeze({
   addingPlugins: {
@@ -25,6 +26,13 @@ const defaultState = utils.deepFreeze({
 })
 
 const getters = {
+  getHasDefaultTransforms(state) {
+    return namespace =>
+      state.plugins.transforms.find(
+        transform => transform.namespace === namespace
+      )
+  },
+
   getHasInstalledPluginsOfType(state) {
     return pluginType => {
       const hasOwns = []
@@ -80,14 +88,34 @@ const getters = {
 
   getIsStepScheduleMinimallyValidated(state, getters) {
     return (
-      getters.getIsStepTransformsMinimallyValidated &&
+      getters.getIsStepLoadersMinimallyValidated &&
       state.installedPlugins.loaders &&
       state.installedPlugins.loaders.length > 0
     )
   },
 
-  getIsStepTransformsMinimallyValidated(_, getters) {
-    return getters.getIsStepLoadersMinimallyValidated
+  getPluginProfiles() {
+    return plugin => {
+      const pluginProfiles = lodash.map(
+        plugin['profiles'],
+        profile => `${plugin.name}@${profile.name}`
+      )
+      return [plugin.name, ...pluginProfiles]
+    }
+  },
+
+  visibleExtractors(state) {
+    return pluginUtils.filterVisiblePlugins({
+      installedPlugins: state.installedPlugins.extractors,
+      pluginList: state.plugins.extractors
+    })
+  },
+
+  visibleLoaders(state) {
+    return pluginUtils.filterVisiblePlugins({
+      installedPlugins: state.installedPlugins.loaders,
+      pluginList: state.plugins.loaders
+    })
   }
 }
 
@@ -96,10 +124,7 @@ const actions = {
     commit('addPluginStart', addConfig)
     return pluginsApi
       .addPlugin(addConfig)
-      .then(() => commit('addPluginComplete', addConfig))
-      .catch(error => {
-        Vue.toasted.global.error(error)
-      })
+      .finally(() => commit('addPluginComplete', addConfig))
   },
 
   getAllPlugins({ commit }) {
@@ -134,7 +159,7 @@ const actions = {
   installRelatedPlugins({ dispatch }, installConfig) {
     return pluginsApi.installBatch(installConfig).then(() => {
       dispatch('getAllPlugins')
-      dispatch('repos/getModels', null, { root: true })
+      dispatch('repos/getAllModels', null, { root: true })
     })
   }
 }

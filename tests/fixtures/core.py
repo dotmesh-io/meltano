@@ -3,10 +3,12 @@ import os
 import shutil
 import yaml
 import logging
+import datetime
 from pathlib import Path
 
 import meltano.core.bundle
 from meltano.core.project import Project
+from meltano.core.behavior.canonical import Canonical
 from meltano.core.project_init_service import ProjectInitService
 from meltano.core.project_add_service import ProjectAddService
 from meltano.core.plugin_install_service import PluginInstallService
@@ -17,6 +19,7 @@ from meltano.core.config_service import ConfigService
 from meltano.core.schedule_service import ScheduleService
 from meltano.core.compiler.project_compiler import ProjectCompiler
 from meltano.core.plugin import PluginRef, PluginType, PluginInstall
+from meltano.core.plugin.factory import plugin_factory
 from meltano.core.elt_context import ELTContextBuilder
 from meltano.core.logging.job_logging_service import JobLoggingService
 
@@ -27,7 +30,7 @@ PROJECT_NAME = "a_meltano_project"
 @pytest.fixture(scope="class")
 def discovery():
     with meltano.core.bundle.find("discovery.yml").open() as base:
-        discovery = yaml.load(base)
+        discovery = yaml.safe_load(base)
 
     discovery[PluginType.EXTRACTORS].append(
         {
@@ -140,7 +143,7 @@ def plugin_invoker_factory(project, plugin_settings_service, plugin_discovery_se
 @pytest.fixture(scope="class")
 def add_model(project, plugin_install_service, project_add_service):
     MODELS = [
-        "model-carbon-intensity-sqlite",
+        "model-carbon-intensity",
         "model-gitflix",
         "model-salesforce",
         "model-gitlab",
@@ -188,6 +191,19 @@ def schedule_service(project, plugin_settings_service):
 
 
 @pytest.fixture(scope="class")
+def schedule(project, tap, target, schedule_service):
+    return schedule_service.add(
+        None,
+        "schedule-mock",
+        extractor=tap.name,
+        loader=target.name,
+        transform="skip",
+        interval="@once",
+        start_date=datetime.datetime.now(),
+    )
+
+
+@pytest.fixture(scope="class")
 def elt_context_builder(project, plugin_settings_service, plugin_discovery_service):
     return ELTContextBuilder(
         project,
@@ -208,7 +224,7 @@ def project(test_dir, project_init_service):
 
     # empty out the `plugins`
     with project.meltano_update() as meltano:
-        meltano["plugins"] = {}
+        meltano.plugins = Canonical()
 
     # not setting the project as default to limit
     # the side effect in tests

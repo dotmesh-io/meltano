@@ -72,7 +72,13 @@ def elt(project, extractor, loader, dry, transform, job_id):
                 click.secho("Extract & load skipped.", fg="yellow")
 
             if transform != "skip":
-                run_transform(elt_context, session, dry_run=dry, models=extractor)
+                try:
+                    # Use a new session for the Transform Part to address the last
+                    # update for Job state not being saved in the DB
+                    transform_session = Session()
+                    run_transform(elt_context, transform_session, dry_run=dry, models=elt_context.extractor.ref.name)
+                finally:
+                    transform_session.close()
             else:
                 click.secho("Transformation skipped.", fg="yellow")
         except Exception as err:
@@ -134,6 +140,8 @@ def install_missing_plugins(
             add_plugin(add_service, project, PluginType.LOADERS, loader)
 
     if transform != "skip":
+        # load the extractor_plugin because we infer the plugin name from it
+
         try:
             config_service.find_plugin("dbt", plugin_type=PluginType.TRANSFORMERS)
         except PluginMissingError as e:
@@ -154,12 +162,12 @@ def install_missing_plugins(
         except PluginMissingError:
             try:
                 # Check if there is a default transform for this extractor
-                PluginDiscoveryService(project).find_plugin(
+                transform_def = PluginDiscoveryService(project).find_plugin(
                     PluginType.TRANSFORMS, extractor
                 )
 
                 click.secho(
-                    f"Transform '{extractor}' is missing, trying to install it...",
+                    f"Transform '{transform_def.name}' is missing, trying to install it...",
                     fg="yellow",
                 )
                 add_transform(project, extractor)
