@@ -25,7 +25,7 @@ requires = [
     'networkx==2.2',
     'pandas==0.24.1',
     'psycopg2==2.7.7',
-    'psutil==5.6.3',
+    'psutil==5.6.6',
     'pyhumps==0.4.0',
     'pypika==0.25.1',
     'python-dotenv==0.10.1',
