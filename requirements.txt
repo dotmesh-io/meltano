@@ -117,7 +117,7 @@ protobuf==3.6.1
 psutil==5.6.3
 psycopg2==2.7.7
 ptyprocess==0.6.0
-py==1.7.0
+py==1.10.0
 pyasn1==0.4.4
 pyasn1-modules==0.2.2
 PyContracts==1.8.6
