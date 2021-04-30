@@ -145,7 +145,7 @@ pytzdata==2018.9
 PyYAML==3.13
 requests==2.20.0
 requests-mock==1.6.0
-rsa==4.0
+rsa==4.7
 s3transfer==0.1.13
 setproctitle==1.1.10
 simplejson==3.16.0
