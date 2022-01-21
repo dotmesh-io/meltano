@@ -76,7 +76,7 @@ gunicorn==19.9.0
 idna==2.7
 ijson==2.3
 iniherit==0.3.9
-ipython==7.5.0
+ipython==7.16.3
 ipython-genutils==0.2.0
 iso8601==0.1.12
 isodate==0.6.0
