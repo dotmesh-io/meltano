@@ -99,7 +99,7 @@ monotonic==1.5
 more-itertools==4.3.0
 multidict==4.4.2
 networkx==2.2
-numpy==1.15.3
+numpy==1.22.0
 ordereddict==1.1
 pandas==0.24.1
 parsedatetime==2.4
